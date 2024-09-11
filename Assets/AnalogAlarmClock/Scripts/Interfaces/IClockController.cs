@@ -9,5 +9,7 @@ namespace AnalogAlarmClock.Interfaces
         public void SetHours(DateTime clockTime);
         public void SetMinutes(DateTime clockTime);
         public void SetSeconds(DateTime clockTime);
+
+        public DateTime GetAlarmTime();
     }
 }

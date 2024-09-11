@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using AnalogAlarmClock.Interfaces;
-using AnalogAlarmClock.TimeSynchronization;
 
 namespace AnalogAlarmClock
 {
@@ -11,37 +10,66 @@ namespace AnalogAlarmClock
         
         private DateTime _dateTime;
         
+        private float _intervalSyncTime = 3600;
+        private float _timeForSync = 3600;
+
+        private bool _pauseView = false;
+        
         private readonly List<IClockController> _clockControllers;
         private readonly TimeCounting _timeCounting;
-        private readonly TimeSynchronizationController _timerSync;
+        private readonly ITimeSynchronizationController _timeSync;
 
-        public ClockTimeController(List<IClockController> clockControllers, TimeCounting timeCounting)
+        public ClockTimeController(List<IClockController> clockControllers, 
+            ITimeSynchronizationController timeSynchronizationController, 
+            TimeCounting timeCounting)
         {
             _clockControllers = clockControllers;
             _timeCounting = timeCounting;
-            _timerSync = new();
+            _timeSync = timeSynchronizationController;
 
             foreach (var clockController in _clockControllers)
                 ChangeClockTime += clockController.SetClockView;
             
             _timeCounting.TimePass += AddSeconds;
             
-            SyncTime();
+            // SyncTime();
         }
 
-        private async void SyncTime()
+        public void SetPauseView(bool pause) => _pauseView = pause;
+
+        public DateTime GetAlarmTime()
         {
-            _dateTime = await _timerSync.SyncTime();
-            ChangeClockTime?.Invoke(_dateTime);
+            return _clockControllers[0].GetAlarmTime();
+        }
+        
+        public async void SyncTime()
+        {
+            // var startSyncTime = _dateTime;
+            var resultSyncTime = await _timeSync.SyncTime();
+            if (resultSyncTime.Success)
+            {
+                _dateTime = resultSyncTime.Message;// + (_dateTime - startSyncTime);
+                SetViewClockTime();
+            }
         }
         
         private void AddSeconds(float countSeconds)
         {
             _dateTime = _dateTime.AddSeconds(countSeconds);
+            SetViewClockTime();
             
-            // Debug.Log($"{_dateTime.Hour}:{_dateTime.Minute}:{_dateTime.Second}");
-            
-            ChangeClockTime?.Invoke(_dateTime);
+            _timeForSync += countSeconds;
+            if (_timeForSync >= _intervalSyncTime)
+            {
+                _timeForSync = 0;
+                SyncTime();
+            }
+        }
+
+        private void SetViewClockTime()
+        {
+            if (!_pauseView)
+                ChangeClockTime?.Invoke(_dateTime);
         }
         
         // private void EditTime()

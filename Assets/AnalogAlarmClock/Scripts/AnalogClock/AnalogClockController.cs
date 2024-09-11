@@ -25,7 +25,11 @@ namespace AnalogAlarmClock.AnalogClock
             _analogClockView.SetMinutes(ConvertClockIntoEulerAnglesMinutes(dateTime));
         public void SetSeconds(DateTime dateTime) => 
             _analogClockView.SetSeconds(ConvertClockIntoEulerAnglesSeconds(dateTime));
-        
+
+        public DateTime GetAlarmTime()
+        {
+            return new DateTime();
+        }
         
         private float ConvertClockIntoEulerAnglesHours(DateTime dateTime)
         {
